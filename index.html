@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora de Escalas</title>
+  <meta name="description" content="Converta medidas reais para qualquer escala — mapas, arquitetura e modelismo.">
+  <script>
+    (function () {
+      var t = localStorage.getItem('escalas.theme');
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <script src="scale-core.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="2" y="9" width="28" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 9v6M13 9v4M18 9v6M23 9v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <h1>Escalas</h1>
+          <p>Mapas, maquetes e miniaturas</p>
+        </div>
+      </div>
+      <button id="themeBtn" class="icon-btn" type="button" aria-label="Alternar tema claro/escuro">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" fill="currentColor"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="ruler" aria-hidden="true"></div>
+
+    <main class="layout">
+      <div class="col">
+      <section class="card" aria-label="Entrada">
+        <div class="tabs" role="tablist" aria-label="Modo de cálculo">
+          <button role="tab" type="button" data-mode="real" aria-selected="true">Real → Escala</button>
+          <button role="tab" type="button" data-mode="draw" aria-selected="false" tabindex="-1">Escala → Real</button>
+          <button role="tab" type="button" data-mode="find" aria-selected="false" tabindex="-1">Descobrir escala</button>
+        </div>
+
+        <div class="fields">
+          <div class="field" id="blockA" role="group" aria-labelledby="labelA">
+            <span class="group-label" id="labelA">Medida real do objeto</span>
+            <div class="dims">
+              <div class="dim"><label for="aY">Altura <em>(y)</em></label><input id="aY" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="2,5"></div>
+              <div class="dim"><label for="aX">Largura <em>(x)</em></label><input id="aX" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="4"></div>
+              <div class="dim"><label for="aZ">Profundidade <em>(z)</em></label><input id="aZ" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="1,5"></div>
+              <div class="dim unit"><label for="unitA">Unidade</label><select id="unitA"></select></div>
+            </div>
+          </div>
+
+          <div class="field" id="blockB" role="group" aria-labelledby="labelB" hidden>
+            <span class="group-label" id="labelB">Medida no desenho ou maquete</span>
+            <div class="dims">
+              <div class="dim"><label for="bY">Altura <em>(y)</em></label><input id="bY" type="text" inputmode="decimal" autocomplete="off" placeholder="—"></div>
+              <div class="dim"><label for="bX">Largura <em>(x)</em></label><input id="bX" type="text" inputmode="decimal" autocomplete="off" placeholder="—"></div>
+              <div class="dim"><label for="bZ">Profundidade <em>(z)</em></label><input id="bZ" type="text" inputmode="decimal" autocomplete="off" placeholder="—"></div>
+              <div class="dim unit"><label for="unitB">Unidade</label><select id="unitB"></select></div>
+            </div>
+          </div>
+
+          <div class="field" id="blockScale">
+            <div class="label-row">
+              <label for="scaleInput">Escala</label>
+              <button id="swapBtn" class="link-btn" type="button" title="Trocar 1:N por N:1">⇄ Inverter</button>
+            </div>
+            <input id="scaleInput" type="text" autocomplete="off" placeholder="1:50.000" value="1:50.000" aria-describedby="scaleHint">
+            <p class="hint" id="scaleHint">Preencha só as dimensões que tiver. Escolha abaixo ou digite: <code>1:50.000</code>, <code>1:75</code> ou <code>5:1</code> (ampliação).</p>
+            <div id="presets" class="presets"></div>
+          </div>
+
+          <p class="error" id="error" role="alert"></p>
+        </div>
+      </section>
+
+      <section class="card result" id="result" aria-live="polite" aria-label="Resultado"></section>
+
+      <section class="card" id="historyCard" aria-label="Histórico" hidden>
+        <div class="label-row">
+          <h2>Histórico</h2>
+          <button id="clearHistory" class="link-btn" type="button">Limpar</button>
+        </div>
+        <ul id="historyList" class="history"></ul>
+      </section>
+      </div>
+
+      <aside class="col side" aria-label="Comparação visual de tamanho">
+        <section class="card" id="chart" aria-live="polite"></section>
+      </aside>
+    </main>
+
+    <footer class="foot">
+      <button id="saveBtn" class="primary" type="button" disabled>Salvar no histórico</button>
+    </footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
